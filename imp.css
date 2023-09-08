@@ -1,0 +1,12 @@
+/* //disable element focus on hover */
+.tp_inputBox:hover:focus {
+  outline: none !important; /* Disable the focus outline on hover */
+}
+
+/* //disable element focus on hovering particular classnames */
+.tp_inputBox:focus:not(.tp_dropdownWrapper.tp_dropdownActive),
+.tp_dropdownWrapper.tp_dropdownActive:hover input[type="text"]:focus {
+  outline: none !important; /* Disable the focus outline when not hovering over .tp_dropdownWrapper.tp_dropdownActive */
+}
+      
+      

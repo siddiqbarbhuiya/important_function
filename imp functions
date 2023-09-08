@@ -1,0 +1,11 @@
+//sort the most resent by dates
+const sortedAppointments = appointments.sort((a, b) => {
+        const aDateTime = new Date(a.appointmentDate + "T" + a.appointmentTime);
+        const bDateTime = new Date(b.appointmentDate + "T" + b.appointmentTime);
+        return bDateTime - aDateTime;
+      });
+      // Select the most recent appointment
+      const mostRecentAppointment = sortedAppointments[0];
+      console.log("mostRecentAppointment:", mostRecentAppointment);
+      
+    
