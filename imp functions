@@ -9,3 +9,53 @@ const sortedAppointments = appointments.sort((a, b) => {
       console.log("mostRecentAppointment:", mostRecentAppointment);
       
     
+      function getCookie(name) {
+        const cookieName = `${name}=`;
+        const cookies = document.cookie.split(';');
+
+        for (let i = 0; i < cookies.length; i++) {
+            let cookie = cookies[i].trim();
+            if (cookie.startsWith(cookieName)) {
+                const encodedValue = cookie.substring(cookieName.length);
+                const decodedValue = decodeURIComponent(encodedValue);
+                return JSON.parse(decodedValue);
+            }
+        }
+        return null;
+    }
+
+    function getCookieSize(name) {
+        const cookieName = `${name}=`;
+        const cookies = document.cookie.split(';');
+
+        for (let i = 0; i < cookies.length; i++) {
+            let cookie = cookies[i].trim();
+            if (cookie.startsWith(cookieName)) {
+                // Calculate the size of the cookie in bytes
+                const encodedValue = cookie.substring(cookieName.length);
+                const decodedValue = decodeURIComponent(encodedValue);
+                const sizeInBytes = encodedValue.length * 2; // Assuming 2 bytes per character
+                return sizeInBytes;
+            }
+        }
+        return 0; // Cookie not found
+    }
+
+    useEffect(() => {
+        const storedArray = getCookie("myArray");
+        if (storedArray !== null) {
+            console.log("Retrieved Array from Cookie:", storedArray);
+        } else {
+            console.log("Cookie not found or invalid.");
+        }
+
+
+
+        const cookieSize = getCookieSize("myArray");
+        if (cookieSize > 0) {
+            console.log(`Size of "myArray" cookie: ${cookieSize} bytes`);
+        } else {
+            console.log("Cookie not found or invalid.");
+        }
+
+    }, [])
