@@ -59,3 +59,26 @@ const sortedAppointments = appointments.sort((a, b) => {
         }
 
     }, [])
+    
+    
+     useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (timeRef.current && !timeRef.current.contains(event.target)) {
+                setIsFocused(false);
+            }
+        };
+        if (isFocused) {
+            document.addEventListener('click', handleClickOutside);
+        } else {
+            document.removeEventListener('click', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('click', handleClickOutside);
+        };
+    }, [isFocused]);
+
+    const handleFocus = () => setIsFocused(true);
+
+    const handleBlur = () => setIsFocused(false);
+
