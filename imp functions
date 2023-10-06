@@ -82,3 +82,14 @@ const sortedAppointments = appointments.sort((a, b) => {
 
     const handleBlur = () => setIsFocused(false);
 
+
+    //disabling input after uploading or before uploaidng the file via button
+
+
+    const openMedia = () => {
+        let fileInput: any = document.getElementById("file");
+        fileInput.removeAttribute("disabled");
+        fileInput.click();
+        fileInput.setAttribute("disabled", "disabled");
+    }
+
