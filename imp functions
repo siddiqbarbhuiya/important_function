@@ -86,10 +86,26 @@ const sortedAppointments = appointments.sort((a, b) => {
     //disabling input after uploading or before uploaidng the file via button
 
 
-    const openMedia = () => {
+        const openMedia = () => {
         let fileInput: any = document.getElementById("file");
         fileInput.removeAttribute("disabled");
         fileInput.click();
         fileInput.setAttribute("disabled", "disabled");
     }
+
+
+    //handle outside click from child directly
+    const handleClickOutside = (event) => {
+        if (ref.current && !ref.current.contains(event.target)) {
+          setLogin(false);
+        }
+      };
+    
+      useEffect(() => {
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+          document.removeEventListener('mousedown', handleClickOutside);
+        };
+      }, []);
+
 
