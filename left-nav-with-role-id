@@ -1,0 +1,420 @@
+import type { MenuProps } from 'antd';
+import { Button, Menu } from 'antd';
+import React, { useEffect, useState } from 'react';
+// import 'antd/dist/antd.css';
+import ialogoDashboard from 'assets/images_final/ialogo-dashboard.svg';
+import ialogoDashboardCollapsed from 'assets/images_final/ialogo-dashboard-collapsed.svg';
+import collapseIcon from 'assets/images_final/collapse-icon.svg';
+import expandedIcon from 'assets/images_final/expanded-icon.svg';
+import hiring from 'assets/images_final/hiring-icon.svg';
+import hr from 'assets/images_final/hr-icon.svg';
+import { parseUserDetails, useNavigate } from 'utils';
+import { access } from 'fs';
+
+const menuItems = [
+    {
+        key: 'sub1',
+        icon: <img src={hiring} />,
+        label: 'Hiring',
+        access: [1, 2],
+        children: [
+            { key: '6', label: 'CV pool', to: '/hiring-cv-pool', access: [1, 2] },
+            { key: '7', label: 'Job Posting', to: '/hiring-job-posting', access: [2] },
+            { key: '8', label: 'Review CV', to: '/hiring-review-cv', access: [2] },
+        ],
+    },
+    {
+        key: 'sub2',
+        icon: <img src={hr} />,
+        label: 'HR',
+        access: [2, 3, 5],
+        children: [
+            { key: '9', label: 'Dashboard',  to: "/hiring-dashboard", access: [2] },
+            { key: '10', label: 'Employee Skill Matrix', to: "/hiring-skillmatrix", access: [2] },
+            { key: '11', label: 'Onboarding', to: '/onboarding', access: [2, 3, 5] },
+            { key: '12', label: 'Offboarding', to: '/offboarding', access: [2, 3, 5]},
+            { key: '13', label: 'Team Members', to: '/team-members', access: [2, 3, 5]},
+            {key: '14', label: 'Document Vault', to: '/document-vault', access: [2, 3, 5]},
+            {
+                key: 'sub3',
+                label: 'Report',
+                children: [
+                    { key: '15', label: 'Recruitment', to: '/report/recruitment-board', access: [2, 3, 5]},
+                    { key: '16', label: 'Timesheet Delay', to: '/report/timesheet-delay', access: [2, 3, 5]},
+                    { key: '17', label: 'Biometric - Total Hours', to: '/report/total-hours', access: [2, 3, 5]}
+                ],
+            },
+            {
+                key: 'sub4',
+                label: 'Leave Tracker',
+                children: [
+                    { key: '18', label: 'Leave Reconciliation Master', to: '/leave-reconcilliation/master-sheet', access: [2, 3, 5]},
+                    { key: '19', label: 'Leave Reconciliation', to: '/leave-reconcilliation/leave-data', access: [2, 3, 5]},
+                    { key: '20', label: 'Upload Leave Data', to: '/leave-reconcilliation/upload-document', access: [2, 3, 5]}
+                ],
+            },
+            {
+                key: 'sub5',
+                label: 'Biometric',
+                children: [
+                    { key: '21', label: 'Daily Attendance', to: '/biometric/daily-attendance-board', access: [2, 3, 5]},
+                    { key: '22', label: 'Regularization List', to: '/biometric/regularization-list', access: [2, 3, 5]},
+                    { key: '23', label: 'Upload Documents', to: '/biometric/upload-documents', access: [2, 3, 5]}
+                ],
+            },
+            {
+                key: 'sub6',
+                label: 'Work From Home',
+                children: [
+                    { key: '24', label: 'WFH History', to: '/work-from-home/history-wfh-requests', access: [2, 3, 5]},
+                    { key: '25', label: 'Pending Requests', to: '/work-from-home/list', access: [2, 3, 5]}
+                ],
+            },
+        ],
+    },
+];
+
+const filterMenuItems: any = (items: any[], roleId: number) => {
+    return items
+        .filter(item => !item.access || item.access.includes(roleId))
+        .map(item => ({
+            ...item,
+            children: item.children ? filterMenuItems(item.children, roleId) : undefined,
+        }));
+};
+
+const getKeyFromPathname = (pathname: string, items: any[]): string => {
+    for (const item of items) {
+        if (item.to === pathname) return item.key;
+        if (item.children) {
+            const childKey = getKeyFromPathname(pathname, item.children);
+            if (childKey) return childKey;
+        }
+    }
+    return '';
+};
+
+const LeftNavigation: React.FC = () => {
+    const [collapsed, setCollapsed] = useState(() => {
+        const savedState = localStorage.getItem("insite_avenues_left_nav");
+        return savedState === null ? true : savedState === "true";
+    });
+    const [openKeys, setOpenKeys] = useState<string[]>(["sub1"]);
+    const { navigate } = useNavigate();
+    const roleId = parseUserDetails()?.role_id || 2;
+    const pathname = window.location.pathname;
+
+    const toggleCollapsed = () => {
+        const newCollapsedState = !collapsed;
+        localStorage.setItem("insite_avenues_left_nav", newCollapsedState.toString());
+        setCollapsed(newCollapsedState);
+    };
+
+    const filteredItems = filterMenuItems(menuItems, roleId);
+
+    console.log(filteredItems)
+
+    const selectedKey = getKeyFromPathname(pathname, filteredItems);
+    const openKey = selectedKey ? filteredItems.find((item:any) => item.children?.some((child:any) => child.key === selectedKey))?.key : 'sub1';
+    const openKeysArray = openKey ? [openKey] : [];
+
+    function findObjectByKey(data:any, key:any) {
+        for (const item of data) {
+          if (item.key === key) {
+            return item;
+          }
+          
+          if (item.children) {
+            const result:any = findObjectByKey(item.children, key);
+            if (result) {
+              return result;
+            }
+          }
+        }
+        
+        return null;
+      }
+
+    const onMenuClick: MenuProps['onClick'] = ({ key }) => {
+        // const item = filteredItems.flatMap((item:any) => [item, ...(item.children || [])]).find((item:any) => item.key === key);
+        const item = findObjectByKey(filteredItems, key)
+        if (item?.to) {
+            navigate(item.to);
+        }
+    };
+
+    const onOpenChange = (keys: string[]) => {
+        setOpenKeys(keys);
+    };
+
+    
+    // const getSubmenu = (arr: any[])=>{
+    //     arr.map((menuItem:any)=>{
+    //         if(menuItem.children){
+    //            return (
+    //            <Menu.SubMenu
+    //             key={menuItem.key}
+    //             title={menuItem.label}
+    //             onTitleClick={() => {
+    //             //   setSelectedKeys(childItem.key);
+    //             }}
+    //           >
+    //             {getSubmenu(menuItem.children)}
+    //           </Menu.SubMenu>
+    //            )
+                
+    //         }
+    //         else if(!menuItem.children && menuItem.to){
+    //             return (
+    //             <Menu.Item key={menuItem.key} onClick={()=>{
+    //                 if(menuItem.to){
+    //                     navigate(menuItem.to)
+    //                 }else{
+    //                     return null;
+    //                 }
+    //             }} >
+    //                 {menuItem.label}
+    //           </Menu.Item>
+    //           )
+    //         }
+    //         else{
+    //             return <Menu.SubMenu
+    //             key={menuItem.key}
+    //             title={menuItem.label}
+    //             onTitleClick={() => {
+    //             //   setSelectedKeys(childItem.key);
+    //             }}
+    //           >
+                
+    //           </Menu.SubMenu>
+    //         }
+    //     })
+    // }
+
+    // const getMenu = (arr: any[])=>{
+    //     arr.map((menuItem:any)=>{
+    //         if(menuItem.children){
+    //             console.log('menuItem children', menuItem.children)
+    //            return (
+    //            <Menu.SubMenu
+    //             key={menuItem.key}
+    //             title={menuItem.label}
+    //             onTitleClick={() => {
+    //             //   setSelectedKeys(childItem.key);
+    //             }}
+    //           >
+    //             {getMenu(menuItem.children)}
+    //           </Menu.SubMenu>
+    //            )
+                
+    //         }
+    //         else{
+    //             console.log('menuItem',menuItem)
+    //             return (
+    //             <Menu.Item key={menuItem.key} onClick={()=>{
+    //                 if(menuItem.to){
+    //                     navigate(menuItem.to)
+    //                 }else{
+    //                     return null;
+    //                 }
+    //             }} >
+    //                 {menuItem.label}
+    //           </Menu.Item>
+    //           )
+    //         }
+    //         // else{
+    //         //     return <Menu.SubMenu
+    //         //     key={menuItem.key}
+    //         //     title={menuItem.label}
+    //         //     onTitleClick={() => {
+    //         //     //   setSelectedKeys(childItem.key);
+    //         //     }}
+    //         //   >
+                
+    //         //   </Menu.SubMenu>
+    //         // }
+    //     })
+    // }
+
+    useEffect(() => {
+        localStorage.setItem("insite_avenues_left_nav", collapsed.toString());
+    }, [collapsed]);
+
+
+    return (
+        <div className='ia-leftNavWrap'>
+            <div className={`ia-leftNavHeader ${collapsed ? 'ia-menu-collapsed' : ''}`}>
+                {!collapsed ? <img src={ialogoDashboardCollapsed} /> : <img src={ialogoDashboard} />}
+                <Button onClick={toggleCollapsed}>
+                    {!collapsed ? <img src={expandedIcon} /> : <img src={collapseIcon} />}
+                </Button>
+            </div>
+            <div className="leftMenuItems">
+                <Menu
+                    selectedKeys={[selectedKey]}
+                    openKeys={collapsed ? openKeys: [""]}
+                    mode="inline"
+                    inlineCollapsed={!collapsed}
+                    onClick={onMenuClick}
+                    onOpenChange={onOpenChange}
+                    items={filteredItems.map((item:any) => ({
+                        ...item,
+                        onClick: () => onMenuClick(item.key),
+                        children: item.children ? item.children.map((child:any) => ({
+                            ...child,
+                            onClick: () => onMenuClick(child.key),
+                            children: child.children ? child.children.map((grandChild:any) => ({
+                                ...grandChild,
+                                onClick: () => onMenuClick(grandChild.key)})): undefined
+                        })) : undefined,
+                    }))}
+                />
+            </div>
+
+
+        {/* <Menu
+          mode="inline"
+          openKeys={collapsed ? openKeys: [""]}
+          selectedKeys={[selectedKey]}
+        //   onOpenChange={(openKeys) => {
+        //     if (openKeys.length > 0) {
+
+        //       if (openKeys[openKeys.length - 1].toString() === '/biometric-submenu') {
+        //         setDefaultOpenKeys(openKeys);
+
+        //       } else {
+        //         setDefaultOpenKeys([openKeys[openKeys.length - 1].toString()]);
+        //       }
+        //     } else {
+        //       setDefaultOpenKeys([]);
+        //     }
+        //     setSelectedKeys([location.pathname]);
+        //   }}
+          onClick={(a) => {
+
+            // setSelectedKeys([a.key]);
+            if (a.key === '/totalhoursreport') {
+            //   setDefaultOpenKeys([a.keyPath[2], a.keyPath[1]]);
+            }
+            else {
+            //   setDefaultOpenKeys([a.keyPath[1]]);
+            }
+
+          }}
+        >
+            {
+                
+             getMenu(filteredItems)
+                
+            }
+
+        </Menu> */}
+        </div>
+    );
+};
+
+export default LeftNavigation;
+
+
+/*
+
+
+import type { MenuProps } from 'antd';
+import { Button, Menu } from 'antd';
+import React, { useEffect, useState } from 'react';
+import 'antd/dist/antd.css';
+import ialogoDashboard from 'assets/images_final/ialogo-dashboard.svg';
+import ialogoDashboardCollapsed from 'assets/images_final/ialogo-dashboard-collapsed.svg';
+import collapseIcon from 'assets/images_final/collapse-icon.svg';
+import expandedIcon from 'assets/images_final/expanded-icon.svg';
+import hiring from 'assets/images_final/hiring-icon.svg';
+import hr from 'assets/images_final/hr-icon.svg';
+import { useNavigate } from 'utils';
+
+type MenuItem = Required<MenuProps>['items'][number];
+
+function getItem(
+    label: React.ReactNode,
+    key: React.Key,
+    icon?: React.ReactNode,
+    children?: MenuItem[],
+    type?: 'group',
+    onClick?: () => void,
+): MenuItem {
+    return {
+        key,
+        icon,
+        children,
+        label,
+        type,
+        onClick
+    } as MenuItem;
+}
+const LeftNavigation: React.FC = () => {
+    const [collapsed, setCollapsed] = useState(() => {
+        const savedState = localStorage.getItem("insite_avenues_left_nav");
+        return savedState === null ? true : savedState === "true";
+    });
+    const { navigate } = useNavigate();
+
+    const toggleCollapsed = () => {
+        const newCollapsedState = !collapsed;
+        localStorage.setItem("insite_avenues_left_nav", newCollapsedState.toString());
+        setCollapsed(newCollapsedState);
+    };
+
+    const items: MenuItem[] = [
+        getItem('Hiring', 'sub1', <img src={hiring} />, [
+            // getItem('Dashboard', '5', undefined, undefined, undefined, () => navigate('/hiring-dashboard')),
+            getItem('CV pool', '6', undefined, undefined, undefined, () => navigate('/hiring-cv-pool')),
+            getItem('Job Posting', '7', undefined, undefined, undefined, () => navigate('/hiring-job-posting')),
+            getItem('Review CV', '8', undefined, undefined, undefined, () => navigate('/hiring-review-cv')),
+        ]),
+        getItem('HR', 'sub2', <img src={hr} />, [
+            getItem('Dashboard', '9'),
+            getItem('Employee Skill Matrix', '10', undefined, undefined, undefined, () => navigate('/hiring-skillmatrix')),
+            getItem('Onboarding', '11'),
+            getItem('Offboarding', '12'),
+            getItem('Active Members', '13'),
+            getItem('Report', 'sub3', null, [
+                getItem('Option 14', '14'),
+                getItem('Option 15', '15'),
+            ]),
+            getItem('Leave Tracker', 'sub4', null, [
+                getItem('Option 16', '16'),
+                getItem('Option 17', '17'),
+            ]),
+            getItem('Biometric', 'sub5', null, [
+                getItem('Option 18', '18'),
+                getItem('Option 19', '19'),
+            ]),
+        ]),
+    ];
+    
+    useEffect(() => {
+        localStorage.setItem("insite_avenues_left_nav", collapsed.toString());
+    }, [collapsed]);
+
+    return (
+        <div className='ia-leftNavWrap'>
+            <div className={`ia-leftNavHeader ${!collapsed ? 'ia-menu-collapsed' : ''}`}>
+                {!collapsed ? <img src={ialogoDashboardCollapsed} /> : <img src={ialogoDashboard}/>}
+                <Button onClick={toggleCollapsed}>
+                    {!collapsed ? <img src={expandedIcon} /> : <img src={collapseIcon} />}
+                </Button>
+            </div>
+            <Menu
+                defaultSelectedKeys={['1']}
+                defaultOpenKeys={['sub1']}
+                mode="inline"
+                inlineCollapsed={!collapsed}
+                items={items}
+            />
+        </div>  
+    )
+}
+
+export default LeftNavigation;
+
+
+*/
